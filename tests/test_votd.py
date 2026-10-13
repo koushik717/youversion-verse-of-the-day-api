@@ -165,3 +165,15 @@ def test_licensed_version_403_becomes_502(make_client):
 
     assert response.status_code == 502
     assert response.json()["error"]["code"] == "UPSTREAM_ERROR"
+
+
+@pytest.mark.parametrize("bad_version", ["-5", "0"])
+def test_non_positive_version_never_calls_upstream(make_client, bad_version):
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise AssertionError("non-positive version should be rejected before any upstream call")
+
+    client = make_client(handler)
+    response = client.get("/votd", params={"day": 195, "version": bad_version})
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "INVALID_VERSION"

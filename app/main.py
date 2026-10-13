@@ -49,9 +49,12 @@ def _parse_version(raw_version: str | None) -> int:
         return settings.default_version_id
 
     try:
-        return int(raw_version)
+        version = int(raw_version)
     except ValueError:
         raise ApiError(400, "INVALID_VERSION", "version must be an integer bible version id")
+    if version <= 0:
+        raise ApiError(400, "INVALID_VERSION", "version must be a positive integer")
+    return version
 
 
 @app.get("/votd", response_model=VerseOfTheDay)
