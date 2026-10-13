@@ -150,3 +150,18 @@ def test_versions_endpoint(make_client):
         {"id": 206, "abbreviation": "WEB", "title": "World English Bible"},
         {"id": 12, "abbreviation": "ASV", "title": "American Standard Version"},
     ]
+
+
+def test_licensed_version_403_becomes_502(make_client):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/v1/verse_of_the_days/195":
+            return votd_response(195)
+        if request.url.path == "/v1/bibles/111/passages/REV.3.20":
+            return httpx.Response(403, json={"message": "Access denied"})
+        raise AssertionError(f"unexpected request: {request.url}")
+
+    client = make_client(handler)
+    response = client.get("/votd", params={"day": 195, "version": 111})
+
+    assert response.status_code == 502
+    assert response.json()["error"]["code"] == "UPSTREAM_ERROR"
